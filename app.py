@@ -111,37 +111,35 @@ def update_output(submit_clicks, url, options):
         return html.Div("Erro ao executar a varredura. Verifique se as opções são válidas.", style={'textAlign': 'center', 'color': colors['text']})
 
     host_tab_content = html.Div([
-        html.Label("Informações do Host:", style={'fontWeight': 'bold', 'color': colors['text']}),
         html.Div([
-            html.Label("Endereço IP:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            html.Div(host_info['addresses']['ipv4'], style={'marginBottom': '10px', 'color': colors['text']}),
-            html.Label("Nome do Host:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            html.Div(host_info['hostnames'][0]['name'] if host_info['hostnames'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
-            html.Label("Sistema Operacional:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            html.Div(host_info['osmatch'][0]['name'] if 'osmatch' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
-            html.Label("Endereço MAC:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            html.Div(host_info['addresses']['mac'] if 'mac' in host_info['addresses'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
-            html.Label("Tempo de Resposta:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            html.Div(f"{host_info['rtt']} ms" if 'rtt' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
-        ]),
+            
+            html.Div([
+                html.Label("Endereço IP:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                html.Div(host_info['addresses']['ipv4'], style={'marginBottom': '10px', 'color': colors['text']}),
+                html.Label("Nome do Host:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                html.Div(host_info['hostnames'][0]['name'] if host_info['hostnames'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+                html.Label("Sistema Operacional:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                html.Div(host_info['osmatch'][0]['name'] if 'osmatch' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+                html.Label("Endereço MAC:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                html.Div(host_info['addresses']['mac'] if 'mac' in host_info['addresses'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+                html.Label("Tempo de Resposta:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                html.Div(f"{host_info['rtt']} ms" if 'rtt' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+            ], style={'float': 'left', 'width': '50%'}),
+            html.Div([
+              
+                dash_table.DataTable(
+                    id='port-table',
+                    columns=[{"name": i, "id": i} for i in results_df.columns],
+                    data=results_df.to_dict('records'),
+                    style_table={'overflowX': 'auto'},
+                    style_cell={'minWidth': '50px', 'maxWidth': '180px', 'overflow': 'hidden', 'textOverflow': 'ellipsis', 'color': colors['text']},
+                    style_header={'backgroundColor': colors['accent'], 'fontWeight': 'bold'},
+                ),
+            ], style={'float': 'right', 'width': '50%'}),
+        ])
     ])
 
-    ports_tab_content = html.Div([
-        html.Label("Detalhes das Portas Abertas e Serviços:", style={'fontWeight': 'bold', 'color': colors['text']}),
-        dash_table.DataTable(
-            id='port-table',
-            columns=[{"name": i, "id": i} for i in results_df.columns],
-            data=results_df.to_dict('records'),
-            style_table={'overflowX': 'auto'},
-            style_cell={'minWidth': '50px', 'maxWidth': '180px', 'overflow': 'hidden', 'textOverflow': 'ellipsis', 'color': colors['text']},
-            style_header={'backgroundColor': colors['accent'], 'fontWeight': 'bold'},
-        ),
-    ])
-
-    return html.Div([
-        html.Div(host_tab_content if host_info else "Informações do Host não disponíveis.", style={'color': colors['text']}),
-        html.Div(ports_tab_content if results_df is not None else "Detalhes das Portas não disponíveis.", style={'color': colors['text']}),
-    ])
+    return host_tab_content
 
 # Função para executar o scanner de host
 def scan_host(host, options):
