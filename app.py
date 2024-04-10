@@ -4,6 +4,7 @@ from dash.dependencies import Input, Output, State
 import nmap
 import pandas as pd
 import socket
+import dash_bootstrap_components as dbc
 
 # Definição de cores personalizadas
 colors = {
@@ -12,44 +13,68 @@ colors = {
     'accent': '#1f77b4',
 }
 
-# Instanciando a aplicação Dash
-app = dash.Dash(__name__)
+# Instanciando a aplicação Dash com Bootstrap
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Layout do aplicativo
 app.layout = html.Div(style={'backgroundColor': colors['background'], 'fontFamily': 'Arial, sans-serif'}, children=[
-    html.Div([
-        html.H1("Scanner de Host Avançado", style={'textAlign': 'center', 'marginBottom': '20px', 'color': colors['text'], 'textShadow': '1px 1px #ccc'}),
-        html.Div([
-            html.Label("Insira a URL do host:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            dcc.Input(id="input-url", type="text", placeholder="URL do host...", style={'width': '100%', 'marginBottom': '10px', 'padding': '8px', 'borderRadius': '5px', 'border': '1px solid #ccc'}),
-            html.Label("Selecione as opções de varredura:", style={'fontWeight': 'bold', 'color': colors['text']}),
-            dcc.Checklist(
-                id="nmap-options",
-                options=[
-                    {'label': '-F (Fast scan)', 'value': '-F'},
-                    {'label': '-O (OS detection)', 'value': '-O'},
-                    {'label': '-sV (Service detection)', 'value': '-sV'},
-                    {'label': '-p (Port range)', 'value': '-p'},
-                    {'label': '-A (Aggressive scan)', 'value': '-A'},  
-                    {'label': '-T4 (Aggressive timing template)', 'value': '-T4'},  
-                    {'label': '-sA (ACK scan)', 'value': '-sA'},  
-                    # Adicione mais opções conforme necessário
-                ],
-                value=[],
-                style={'marginBottom': '20px', 'color': colors['text']}
-            ),
-            html.Button(id="submit-button", n_clicks=0, children="Executar Scanner", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'boxShadow': '2px 2px 5px #ccc'}),
-            html.Button(id="clear-button", n_clicks=0, children="Limpar", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'marginLeft': '10px', 'boxShadow': '2px 2px 5px #ccc'})
-        ], style={'maxWidth': '500px', 'margin': 'auto', 'padding': '20px', 'borderRadius': '10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
-    ], style={'backgroundColor': colors['background'], 'padding': '20px'}),
-    
-    dcc.Loading(id="loading-output", children=[
-        dcc.Tabs(id="tabs", value='tab-host', children=[
-            dcc.Tab(label='Informações do Host', value='tab-host', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'}),
-            dcc.Tab(label='Detalhes das Portas', value='tab-ports', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'})
+    dbc.Container([
+        dbc.Row([
+            dbc.Col(
+                html.H1("Scanner de Host Avançado", style={'textAlign': 'center', 'color': colors['text'], 'marginBottom': '20px', 'textShadow': '1px 1px #ccc'}),
+                width=12
+            )
         ]),
-        html.Div(id='tabs-content', style={'padding': '20px', 'borderRadius': '0 0 10px 10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
-    ], style={'backgroundColor': colors['background'], 'padding': '20px', 'marginTop': '20px', 'borderRadius': '10px', 'boxShadow': '2px 2px 5px #ccc'}),
+        dbc.Row([
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.Label("Insira a URL do host:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                        dcc.Input(id="input-url", type="text", placeholder="URL do host...", style={'width': '100%', 'marginBottom': '10px', 'padding': '8px', 'borderRadius': '5px', 'border': '1px solid #ccc'}),
+                        html.Label("Selecione as opções de varredura:", style={'fontWeight': 'bold', 'color': colors['text']}),
+                        dcc.Checklist(
+                            id="nmap-options",
+                            options=[
+                                {'label': '-F (Fast scan)', 'value': '-F'},
+                                {'label': '-O (OS detection)', 'value': '-O'},
+                                {'label': '-sV (Service detection)', 'value': '-sV'},
+                                {'label': '-p (Port range)', 'value': '-p'},
+                                {'label': '-A (Aggressive scan)', 'value': '-A'},  
+                                {'label': '-T4 (Aggressive timing template)', 'value': '-T4'},  
+                                {'label': '-sA (ACK scan)', 'value': '-sA'},  
+                                # Adicione mais opções conforme necessário
+                            ],
+                            value=[],
+                            style={'marginBottom': '20px', 'color': colors['text']}
+                        ),
+                        dbc.Row([
+                            dbc.Col(
+                                html.Button(id="submit-button", n_clicks=0, children="Executar Scanner", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'boxShadow': '2px 2px 5px #ccc'}),
+                                width=6
+                            ),
+                            dbc.Col(
+                                html.Button(id="clear-button", n_clicks=0, children="Limpar", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'boxShadow': '2px 2px 5px #ccc'}),
+                                width=6
+                            )
+                        ])
+                    ])
+                ], style={'maxWidth': '500px', 'margin': 'auto', 'padding': '20px', 'borderRadius': '10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
+                width=12
+            )
+        ]),
+        dbc.Row([
+            dbc.Col(
+                dcc.Loading(id="loading-output", children=[
+                    dcc.Tabs(id="tabs", value='tab-host', children=[
+                        dcc.Tab(label='Informações do Host', value='tab-host', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'}),
+                        dcc.Tab(label='Detalhes das Portas', value='tab-ports', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'})
+                    ]),
+                    html.Div(id='tabs-content', style={'padding': '20px', 'borderRadius': '0 0 10px 10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
+                ], style={'backgroundColor': colors['background'], 'padding': '20px', 'marginTop': '20px', 'borderRadius': '10px', 'boxShadow': '2px 2px 5px #ccc'}),
+                width=12
+            )
+        ]),
+    ])
 ])
 
 # Função para obter o endereço IP a partir da URL
