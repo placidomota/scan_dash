@@ -1,39 +1,56 @@
 import dash
-from dash import dcc, html
+from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output, State
 import nmap
 import pandas as pd
 import socket
 
+# Definição de cores personalizadas
+colors = {
+    'background': '#f9f9f9',
+    'text': '#333333',
+    'accent': '#1f77b4',
+}
+
+# Instanciando a aplicação Dash
 app = dash.Dash(__name__)
 
 # Layout do aplicativo
-app.layout = html.Div([
+app.layout = html.Div(style={'backgroundColor': colors['background'], 'fontFamily': 'Arial, sans-serif'}, children=[
     html.Div([
-        html.H1("Scanner de Host Avançado", style={'textAlign': 'center', 'marginBottom': '20px'}),
+        html.H1("Scanner de Host Avançado", style={'textAlign': 'center', 'marginBottom': '20px', 'color': colors['text'], 'textShadow': '1px 1px #ccc'}),
         html.Div([
-            html.Label("Insira a URL do host:", style={'fontWeight': 'bold'}),
-            dcc.Input(id="input-url", type="text", placeholder="URL do host...", style={'width': '100%', 'marginBottom': '10px'}),
-            html.Label("Selecione as opções de varredura:", style={'fontWeight': 'bold'}),
+            html.Label("Insira a URL do host:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            dcc.Input(id="input-url", type="text", placeholder="URL do host...", style={'width': '100%', 'marginBottom': '10px', 'padding': '8px', 'borderRadius': '5px', 'border': '1px solid #ccc'}),
+            html.Label("Selecione as opções de varredura:", style={'fontWeight': 'bold', 'color': colors['text']}),
             dcc.Checklist(
                 id="nmap-options",
                 options=[
                     {'label': '-F (Fast scan)', 'value': '-F'},
                     {'label': '-O (OS detection)', 'value': '-O'},
                     {'label': '-sV (Service detection)', 'value': '-sV'},
-                    {'label': '-p (Port range)', 'value': '-p'}
+                    {'label': '-p (Port range)', 'value': '-p'},
+                    {'label': '-A (Aggressive scan)', 'value': '-A'},  
+                    {'label': '-T4 (Aggressive timing template)', 'value': '-T4'},  
+                    {'label': '-sA (ACK scan)', 'value': '-sA'},  
+                    # Adicione mais opções conforme necessário
                 ],
                 value=[],
-                style={'marginBottom': '10px'}
+                style={'marginBottom': '20px', 'color': colors['text']}
             ),
-            html.Button(id="submit-button", n_clicks=0, children="Executar Scanner", style={'marginRight': '10px'}),
-            html.Button(id="clear-button", n_clicks=0, children="Limpar")
-        ], style={'maxWidth': '500px', 'margin': 'auto'})
-    ], style={'backgroundColor': '#f2f2f2', 'padding': '20px'}),
-
-    dcc.Loading(id="loading-output", children=[html.Div(id="output-results", style={'marginTop': '20px'})]),
-    html.Div(id='port-summary', style={'textAlign': 'center', 'marginTop': '20px'})
-], style={'fontFamily': 'Arial, sans-serif'})
+            html.Button(id="submit-button", n_clicks=0, children="Executar Scanner", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'boxShadow': '2px 2px 5px #ccc'}),
+            html.Button(id="clear-button", n_clicks=0, children="Limpar", style={'backgroundColor': colors['accent'], 'color': 'white', 'border': 'none', 'padding': '12px 24px', 'cursor': 'pointer', 'borderRadius': '5px', 'fontWeight': 'bold', 'marginLeft': '10px', 'boxShadow': '2px 2px 5px #ccc'})
+        ], style={'maxWidth': '500px', 'margin': 'auto', 'padding': '20px', 'borderRadius': '10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
+    ], style={'backgroundColor': colors['background'], 'padding': '20px'}),
+    
+    dcc.Loading(id="loading-output", children=[
+        dcc.Tabs(id="tabs", value='tab-host', children=[
+            dcc.Tab(label='Informações do Host', value='tab-host', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'}),
+            dcc.Tab(label='Detalhes das Portas', value='tab-ports', style={'color': colors['text'], 'backgroundColor': colors['accent'], 'borderTopLeftRadius': '10px', 'borderTopRightRadius': '10px'})
+        ]),
+        html.Div(id='tabs-content', style={'padding': '20px', 'borderRadius': '0 0 10px 10px', 'backgroundColor': 'white', 'boxShadow': '2px 2px 5px #ccc'}),
+    ], style={'backgroundColor': colors['background'], 'padding': '20px', 'marginTop': '20px', 'borderRadius': '10px', 'boxShadow': '2px 2px 5px #ccc'}),
+])
 
 # Função para obter o endereço IP a partir da URL
 def get_ip_from_url(url):
@@ -49,57 +66,57 @@ def get_ip_from_url(url):
 
 # Callback para executar o scanner quando o botão é clicado
 @app.callback(
-    Output("output-results", "children"),
-    [Input("submit-button", "n_clicks"),
-     Input("clear-button", "n_clicks")],
+    Output("tabs-content", "children"),
+    [Input("submit-button", "n_clicks")],
     [State("input-url", "value"),
      State("nmap-options", "value")]
 )
-def update_output(submit_clicks, clear_clicks, url, options):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return ""
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-    if button_id == "submit-button" and submit_clicks > 0 and url:
-        # Obtém o endereço IP da URL
-        ip = get_ip_from_url(url)
-        if ip:
-            # Executa o scanner de host
-            results_df, host_info = scan_host(ip, options)
-            if results_df is not None:
-                return html.Div([
-                    html.H3("Resultados da Varredura", style={'textAlign': 'center', 'marginBottom': '20px'}),
-                    html.Div([
-                        html.Div([
-                            html.Label("Endereço IP:", style={'fontWeight': 'bold'}),
-                            html.Div(host_info['addresses']['ipv4'], style={'marginBottom': '10px'}),
-                            html.Label("Sistema Operacional:", style={'fontWeight': 'bold'}),
-                            html.Div(host_info['osmatch'][0]['name'] if 'osmatch' in host_info else 'Desconhecido', style={'marginBottom': '10px'}),
-                            html.Label("Endereço MAC:", style={'fontWeight': 'bold'}),
-                            html.Div(host_info['addresses']['mac'] if 'mac' in host_info['addresses'] else 'Desconhecido', style={'marginBottom': '10px'}),
-                            html.Label("Tempo de Resposta:", style={'fontWeight': 'bold'}),
-                            html.Div(f"{host_info['rtt']} ms" if 'rtt' in host_info else 'Desconhecido', style={'marginBottom': '10px'}),
-                        ], style={'flex': '1'}),
-                        html.Div([
-                            html.Label("Portas Abertas e Serviços:", style={'fontWeight': 'bold'}),
-                            html.Table([
-                                html.Thead(html.Tr([html.Th("Porta"), html.Th("Serviço")])),
-                                html.Tbody([
-                                    html.Tr([html.Td(port), html.Td(service)]) for port, service in zip(results_df['Porta'], results_df['Serviço'])
-                                ])
-                            ])
-                        ], style={'flex': '1', 'overflowY': 'auto', 'maxHeight': '400px'})
-                    ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'flex-start'}),
-                ])
-            else:
-                return html.Div("Erro ao executar a varredura. Verifique se as opções são válidas.", style={'textAlign': 'center'})
-        else:
-            return html.Div("URL inválida. Por favor, insira uma URL válida.", style={'textAlign': 'center'})
-    elif button_id == "clear-button" and clear_clicks > 0:
+def update_output(submit_clicks, url, options):
+    if submit_clicks is None or submit_clicks == 0 or not url:
         return ""
 
-    return ""
+    # Obtém o endereço IP da URL
+    ip = get_ip_from_url(url)
+    if not ip:
+        return html.Div("URL inválida. Por favor, insira uma URL válida.", style={'textAlign': 'center', 'color': colors['text']})
+
+    # Executa o scanner de host
+    results_df, host_info = scan_host(ip, options)
+    if results_df is None:
+        return html.Div("Erro ao executar a varredura. Verifique se as opções são válidas.", style={'textAlign': 'center', 'color': colors['text']})
+
+    host_tab_content = html.Div([
+        html.Label("Informações do Host:", style={'fontWeight': 'bold', 'color': colors['text']}),
+        html.Div([
+            html.Label("Endereço IP:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            html.Div(host_info['addresses']['ipv4'], style={'marginBottom': '10px', 'color': colors['text']}),
+            html.Label("Nome do Host:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            html.Div(host_info['hostnames'][0]['name'] if host_info['hostnames'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+            html.Label("Sistema Operacional:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            html.Div(host_info['osmatch'][0]['name'] if 'osmatch' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+            html.Label("Endereço MAC:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            html.Div(host_info['addresses']['mac'] if 'mac' in host_info['addresses'] else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+            html.Label("Tempo de Resposta:", style={'fontWeight': 'bold', 'color': colors['text']}),
+            html.Div(f"{host_info['rtt']} ms" if 'rtt' in host_info else 'Desconhecido', style={'marginBottom': '10px', 'color': colors['text']}),
+        ]),
+    ])
+
+    ports_tab_content = html.Div([
+        html.Label("Detalhes das Portas Abertas e Serviços:", style={'fontWeight': 'bold', 'color': colors['text']}),
+        dash_table.DataTable(
+            id='port-table',
+            columns=[{"name": i, "id": i} for i in results_df.columns],
+            data=results_df.to_dict('records'),
+            style_table={'overflowX': 'auto'},
+            style_cell={'minWidth': '50px', 'maxWidth': '180px', 'overflow': 'hidden', 'textOverflow': 'ellipsis', 'color': colors['text']},
+            style_header={'backgroundColor': colors['accent'], 'fontWeight': 'bold'},
+        ),
+    ])
+
+    return html.Div([
+        html.Div(host_tab_content if host_info else "Informações do Host não disponíveis.", style={'color': colors['text']}),
+        html.Div(ports_tab_content if results_df is not None else "Detalhes das Portas não disponíveis.", style={'color': colors['text']}),
+    ])
 
 # Função para executar o scanner de host
 def scan_host(host, options):
@@ -111,44 +128,14 @@ def scan_host(host, options):
         
         # Organize os resultados em um DataFrame para fácil visualização
         results_df = pd.DataFrame(open_ports, columns=['Porta', 'Detalhes'])
-        results_df['Serviço'] = results_df['Detalhes'].apply(lambda x: x.get('name', 'Desconhecido'))
+        for key in results_df['Detalhes'][0].keys():
+            results_df[key] = results_df['Detalhes'].apply(lambda x: x.get(key, 'Desconhecido'))
+        results_df = results_df.drop(columns=['Detalhes'])
         
         return results_df, host_info
     except Exception as e:
         print(e)
         return None, None
-
-# Callback para atualizar o card de resumo das portas
-@app.callback(
-    Output('port-summary', 'children'),
-    [Input('submit-button', 'n_clicks')],
-    [State('input-url', 'value'),
-     State('nmap-options', 'value')]
-)
-def update_port_summary(n_clicks, url, options):
-    if n_clicks is None or n_clicks == 0:
-        return ""
-
-    ip = get_ip_from_url(url)
-    if ip:
-        results_df, _ = scan_host(ip, options)
-        if results_df is not None:
-            total_ports = len(results_df)
-            open_ports = results_df[results_df['Detalhes'].apply(lambda x: x.get('state', '') == 'open')]
-            total_open_ports = len(open_ports)
-
-            return html.Div([
-                html.Div([
-                    html.H4("Total de Portas Escaneadas", style={'fontWeight': 'bold'}),
-                    html.Div(total_ports, style={'fontSize': '24px'})
-                ], className='card'),
-                html.Div([
-                    html.H4("Total de Portas Abertas", style={'fontWeight': 'bold'}),
-                    html.Div(total_open_ports, style={'fontSize': '24px'})
-                ], className='card')
-            ], className='summary-container')
-
-    return ""
 
 if __name__ == "__main__":
     app.run_server(debug=True)
