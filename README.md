@@ -21,7 +21,7 @@ Este é um projeto de aplicativo web construído com Python e Dash, uma bibliote
 ## 🛠️ Instalação
 
 1. Clone o repositório:
-git clone https://github.com/seu-usuario/scann_dash.git
+git clone https://github.com/seu-usuario/scan_dash.git
 
 2. Instale as Dependências
 Certifique-se de ter o Python e o pip instalados em seu sistema. Em seguida, instale as dependências usando o seguinte comando:
